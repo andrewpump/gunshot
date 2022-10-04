@@ -8,7 +8,6 @@ import pyaudio
 import sys
 import librosa
 import time
-import schedule
 import scipy.signal
 import numpy as np
 import tensorflow as tf
@@ -37,10 +36,7 @@ soundclass.config(font=("Courier", 90))
 soundclass.pack(padx=200, pady=400)
 
 
-# Variable Initializations #
-
 # Stream Variables
-
 sound_data = np.zeros(0, dtype = "float32")
 noise_sample_captured = False
 gunshot_sound_counter = 1
@@ -50,11 +46,7 @@ audio_analysis_queue = Queue()
 DIRPATH = "/home/user/Downloads/raspberry_pi/"
 
 
-
-
-
 # Loading in Augmented Labels #
-
 labels = np.load(os.path.join(DIRPATH, "augmented_labels.npy"))
 
 
@@ -64,7 +56,6 @@ labels = np.array([("gun_shot" if label == "gun_shot" else "other") for label in
 label_binarizer = LabelBinarizer()
 labels = label_binarizer.fit_transform(labels)
 labels = np.hstack((labels, 1 - labels))
-
 
 
 # Loading the Models #
@@ -97,17 +88,6 @@ output_details_3 = interpreter_3.get_output_details()
 input_shape_3 = input_details_3[0]['shape']
 
 
-### --- ###
-
-# Multithreaded Inference: A callback thread adds two-second samples of microphone data to an audio analysis
-# queue; the main thread, an audio analysis thread, detects the presence of gunshot sounds in samples retrieved from
-# the audio analysis queue.
-
-### --- ###
-
-
-# Defining Threads #
-
 
 
 ## Callback Thread ##
@@ -138,16 +118,10 @@ stream  = pa.open(format = AUDIO_FORMAT,
 stream.start_stream()
 
 
-### Audio Analysis Thread
-
-# Starts the scheduler for clearing the primary log file
-schedule.every().day.at(SCHEDULED_LOG_FILE_TRUNCATION_TIME).do(clear_log_file)
 
 # This thread will run indefinitely
 while True:
-    # Refreshes the scheduler
-    schedule.run_pending()
-    
+
     # Gets a sample and its timestamp from the audio analysis queue
     microphone_data = np.array(audio_analysis_queue.get(), dtype = "float32")
     time_of_sample_occurrence = audio_analysis_queue.get()
