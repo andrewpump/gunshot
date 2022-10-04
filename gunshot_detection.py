@@ -7,7 +7,6 @@ import os
 import pyaudio
 import sys
 import librosa
-import logging
 import time
 import schedule
 import scipy.signal
@@ -24,18 +23,6 @@ from tkinter import *
 from time import sleep
 import io
 from contextlib import redirect_stdout
-
-
-# Configuring the Logger #
-
-logger = logging.getLogger('debugger')
-logger.setLevel(logging.DEBUG)
-ch = logging.FileHandler('output.log')
-ch.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-ch.setFormatter(formatter)
-logger.addHandler(ch)
-
 
 
 
@@ -376,7 +363,6 @@ stream  = pa.open(format = form_1,
 
 # Starts the callback thread
 stream.start_stream()
-logger.debug("--- Listening to Audio Stream ---")
 
 
 ### Audio Analysis Thread
@@ -403,10 +389,6 @@ while True:
     if maximum_frequency_value >= AUDIO_VOLUME_THRESHOLD:
         
 
-
-        # Displays the current sample's maximum frequency value
-        logger.debug("The maximum frequency value of a given sample before processing: " + str(maximum_frequency_value))
-        
         # Post-processes the microphone data
         modified_microphone_data = librosa.resample(y = microphone_data, orig_sr = AUDIO_RATE, target_sr = 22050)
         if NOISE_REDUCTION_ENABLED and noise_sample_captured:
