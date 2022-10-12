@@ -43,6 +43,7 @@ gunshot_sound_counter = 1
 noise_sample = []
 audio_analysis_queue = Queue()
 
+# HARDCODED PATH
 DIRPATH = "/home/user/Downloads/raspberry_pi/"
 
 
@@ -88,19 +89,19 @@ output_details_3 = interpreter_3.get_output_details()
 input_shape_3 = input_details_3[0]['shape']
 
 
-
+previous_data = None
 
 ## Callback Thread ##
-
 def callback(in_data, frame_count, time_info, status):
     global sound_data
     sound_buffer = np.frombuffer(in_data, dtype="float32")
     sound_data = np.append(sound_data, sound_buffer)
     if len(sound_data) >= 88200:
+        sound_data = sound_data[-88200:]
         audio_analysis_queue.put(sound_data)
         current_time = time.ctime(time.time())
         audio_analysis_queue.put(current_time)
-        sound_data = np.zeros(0, dtype="float32")
+        
     return sound_buffer, pyaudio.paContinue
 
 
@@ -125,25 +126,31 @@ while True:
     # Gets a sample and its timestamp from the audio analysis queue
     microphone_data = np.array(audio_analysis_queue.get(), dtype = "float32")
     time_of_sample_occurrence = audio_analysis_queue.get()
-    
-    # Cleans up the global NumPy audio data source
-    sound_data = np.zeros(0, dtype = "float32")
-        
+
     # Finds the current sample's maximum frequency value
     maximum_frequency_value = np.max(microphone_data)
         
     # Determines whether a given sample potentially contains a gunshot
     if maximum_frequency_value >= AUDIO_VOLUME_THRESHOLD:
         
+        
 
+        start_time = time.time()
+        
         # Post-processes the microphone data
         modified_microphone_data = librosa.resample(y = microphone_data, orig_sr = AUDIO_RATE, target_sr = 22050)
+        print("--- %s seconds ---" % (time.time() - start_time))
         if NOISE_REDUCTION_ENABLED and noise_sample_captured:
                 # Acts as a substitute for normalization
                 modified_microphone_data = remove_noise(audio_clip = modified_microphone_data, noise_clip = noise_sample)
                 number_of_missing_hertz = 44100 - len(modified_microphone_data)
                 modified_microphone_data = np.array(modified_microphone_data.tolist() + [0 for i in range(number_of_missing_hertz)], dtype = "float32")
         modified_microphone_data = modified_microphone_data[:44100]
+
+        
+
+
+        
 
         # Passes an audio sample of an appropriate format into the model for inference
         processed_data_1 = modified_microphone_data
@@ -155,6 +162,10 @@ while True:
         processed_data_3 = convert_audio_to_spectrogram(data = modified_microphone_data, hop_length=345)
         processed_data_3 = processed_data_3.reshape(input_shape_3)
 
+        
+
+        
+         
         # Performs inference with the instantiated TensorFlow Lite models
         interpreter_1.set_tensor(input_details_1[0]['index'], processed_data_1)
         interpreter_1.invoke()
@@ -167,6 +178,8 @@ while True:
         interpreter_3.set_tensor(input_details_3[0]['index'], processed_data_3)
         interpreter_3.invoke()
         probabilities_3 = interpreter_3.get_tensor(output_details_3[0]['index'])
+
+        
 
         
         # Records which models, if any, identified a gunshot
