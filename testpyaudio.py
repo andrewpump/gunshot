@@ -11,7 +11,7 @@ stream = p.open(format=pyaudio.paFloat32,
                  rate=44100,
                  channels=1,
                  input_device_index=1,
-                 frames_per_buffer=2048,
+                 frames_per_buffer=512,
                  input=True)
 
 

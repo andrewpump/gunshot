@@ -44,7 +44,7 @@ noise_sample = []
 audio_analysis_queue = Queue()
 
 # HARDCODED PATH
-DIRPATH = "/home/user/Downloads/raspberry_pi/"
+DIRPATH = os.getcwd()
 
 
 # Loading in Augmented Labels #
